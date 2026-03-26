@@ -1,0 +1,124 @@
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+class IRezervare {
+public:
+    virtual int calculeazaDurata() const = 0;
+    virtual double calculeazaPret() const = 0;
+    virtual string getTip() const = 0;
+    virtual ~IRezervare() {}
+};
+
+class Rezervare : public IRezervare {
+protected:
+    string numeClient;
+    string dataOra;
+    int nrPersoane;
+public:
+    Rezervare(string nume, string data, int nr) : numeClient(nume), dataOra(data), nrPersoane(nr) {}
+    string getNume() const { return numeClient; }
+    string getData() const { return dataOra; }
+    int getNrPers() const { return nrPersoane; }
+};
+
+class RezervareZilnica : public Rezervare {
+public:
+    RezervareZilnica(string n, string d, int p) : Rezervare(n, d, p) {}
+    string getTip() const override { return "Zilnica"; }
+    int calculeazaDurata() const override { return 2; }
+    double calculeazaPret() const override {
+        if (nrPersoane <= 2) return 50.0;
+        return 50.0 + (nrPersoane - 2) * 20.0;
+    }
+};
+
+class RezervareEvenimentSpecial : public Rezervare {
+public:
+    RezervareEvenimentSpecial(string n, string d, int p) : Rezervare(n, d, p) {}
+    string getTip() const override { return "Special"; }
+    int calculeazaDurata() const override { return 5; }
+    double calculeazaPret() const override {
+        int oreExtra = calculeazaDurata() - 2;
+        return 200.0 + oreExtra * 50.0;
+    }
+};
+
+class RezervareGrupMare : public Rezervare {
+public:
+    RezervareGrupMare(string n, string d, int p) : Rezervare(n, d, p) {}
+    string getTip() const override { return "Grup"; }
+    int calculeazaDurata() const override { return 3; }
+    double calculeazaPret() const override {
+        double pret = 500.0;
+        if (nrPersoane > 20) pret += (nrPersoane - 20) * 10.0;
+        return pret;
+    }
+};
+
+class RezervareVIP : public Rezervare {
+public:
+    RezervareVIP(string n, string d, int p) : Rezervare(n, d, p) {}
+    string getTip() const override { return "VIP"; }
+    int calculeazaDurata() const override { return 4; }
+    double calculeazaPret() const override {
+        double pret = 1000.0;
+        if (nrPersoane > 5) pret += (nrPersoane - 5) * 100.0;
+        return pret;
+    }
+};
+
+void creeazaFisier(const string& numeFisier) {
+    ofstream f(numeFisier);
+    if (f.is_open()) {
+        f << "Zilnica TudorPopescu 2025-02-27_19:00 4\n";
+        f << "Special VasileIon 2025-03-01_18:00 12\n";
+        f << "Grup ElenaRadu 2025-03-05_14:00 25\n";
+        f << "VIP MariaIonescu 2025-03-10_20:00 5\n";
+        f.close();
+    }
+}
+
+int main() {
+    string numeFisier = "rezervari.txt";
+
+    creeazaFisier(numeFisier);
+
+    vector<Rezervare*> lista;
+    ifstream fisier(numeFisier);
+
+    if (!fisier.is_open()) {
+        cout << "Eroare la deschiderea fisierului!" << endl;
+        return 1;
+    }
+
+    string tip, nume, data;
+    int nr;
+
+    while (fisier >> tip >> nume >> data >> nr) {
+        if (tip == "Zilnica") lista.push_back(new RezervareZilnica(nume, data, nr));
+        else if (tip == "Special") lista.push_back(new RezervareEvenimentSpecial(nume, data, nr));
+        else if (tip == "Grup") lista.push_back(new RezervareGrupMare(nume, data, nr));
+        else if (tip == "VIP") lista.push_back(new RezervareVIP(nume, data, nr));
+    }
+
+    fisier.close();
+
+    cout << "TIP\tCLIENT\t\tPERS\tDURATA\tPRET\n";
+    cout << "---------------------------------------------\n";
+
+    for (auto r : lista) {
+        cout << r->getTip() << "\t";
+        cout << r->getNume() << "\t\t";
+        cout << r->getNrPers() << "\t";
+        cout << r->calculeazaDurata() << "\t";
+        cout << r->calculeazaPret() << " MDL\n";
+    }
+
+    for (auto r : lista) delete r;
+
+    return 0;
+}
